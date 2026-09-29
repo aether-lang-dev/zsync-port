@@ -1,17 +1,20 @@
 # SPDX-FileCopyrightText: 2026 Colin Phipps <cph@moria.org.uk>
 # SPDX-License-Identifier: Artistic-2.0
 #
-# Build + test driver for the pure-Aether zsync port. Uses the freshly
-# built aether toolchain (which has MD4, issue #637) rather than the
-# possibly-stale installed `ae`. No aeb dependency — plain make + ae.
+# Build + test driver for the pure-Aether zsync port. Uses the installed
+# toolchain on PATH; override AE/AETHERC to test another installation.
+# No aeb dependency — plain make + ae.
 
-AE      ?= /home/paul/scm/aether/build/ae
-AETHERC ?= /home/paul/scm/aether/build/aetherc
+AE      ?= ae
+AETHERC ?= aetherc
 CFLAGS_AE := $(shell $(AE) cflags)
 CC      ?= cc
 
 # Sidecar C objects (positional I/O shim).
 C_OBJS := rcksum/fileio.o
+
+# Imported modules affect each whole-program compile, too.
+AE_SOURCES := $(wildcard rcksum/*.ae zsync/*.ae cmd/*.ae test/*.ae)
 
 %.o: %.c
 	$(CC) -c $< -o $@
@@ -31,17 +34,17 @@ test-pure:
 # $(AETHERC) emits a .c next to the source; we compile+link it with the
 # sidecar object and the aether runtime.
 # Generic rules: build any *_test.ae that needs the C shim, then run it.
-build/%: rcksum/%.ae $(C_OBJS)
+build/%: rcksum/%.ae $(C_OBJS) $(AE_SOURCES)
 	@mkdir -p build
 	$(AETHERC) $< build/$*.c
 	$(CC) build/$*.c $(C_OBJS) $(CFLAGS_AE) -o $@
 
-build/%: cmd/%.ae $(C_OBJS)
+build/%: cmd/%.ae $(C_OBJS) $(AE_SOURCES)
 	@mkdir -p build
 	$(AETHERC) $< build/$*.c
 	$(CC) build/$*.c $(C_OBJS) $(CFLAGS_AE) -o $@
 
-build/%: zsync/%.ae $(C_OBJS)
+build/%: zsync/%.ae $(C_OBJS) $(AE_SOURCES)
 	@mkdir -p build
 	$(AETHERC) $< build/$*.c
 	$(CC) build/$*.c $(C_OBJS) $(CFLAGS_AE) -o $@

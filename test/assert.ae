@@ -12,7 +12,6 @@
 
 import std.string
 
-extern malloc(size: int) -> ptr
 
 // The mutable counters can't live at module scope (Aether rejects
 // mutable module-level assignment), so the test threads this record
@@ -23,8 +22,7 @@ struct Harness {
 }
 
 new() -> *Harness {
-    raw = malloc(16)
-    h = raw as *Harness
+    h = heap.new(Harness)
     h.passed = 0
     h.failed = 0
     return h

@@ -24,7 +24,6 @@ import std.http (*)
 import std.fs
 import rcksum.fileio
 
-extern malloc(size: int) -> ptr
 
 // A served directory mount: maps the route prefix to a base dir and
 // strips the prefix before serve_static (which maps the FULL path under
@@ -73,8 +72,7 @@ serve(_ctx: ptr, prefix: string, dir: string) {
     if _ctx == null {
         return
     }
-    raw = malloc(16)
-    m = raw as *Mount
+    m = heap.new(Mount)
     m.prefix = prefix
     m.base = dir
     // register prefix/* so every file under it routes here

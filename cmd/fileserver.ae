@@ -15,7 +15,6 @@ import std.os (*)
 import std.fs
 import rcksum.fileio
 
-extern malloc(size: int) -> ptr
 
 struct Ctx { base: string }
 
@@ -96,8 +95,7 @@ main() {
     port = parse_num(aether_args_get(1))
     base = aether_args_get(2)
 
-    craw = malloc(16)
-    ctx = craw as *Ctx
+    ctx = heap.new(Ctx)
     ctx.base = base
 
     server = http_server_create(port)

@@ -9,12 +9,11 @@ import std.string (*)
 import std.map (*)
 import std.fs
 import std.http.client
-import std.cryptography
+import std.encoding
 import zsync.control
 import zsync.download
 import rcksum.fileio
 
-extern malloc(size: int) -> ptr
 
 // Connection options applied to every request, threaded from the CLI.
 //   insecure:   1 = skip TLS peer/hostname verification (--no-check-certificate)
@@ -27,8 +26,7 @@ struct NetOpts {
 
 // Default: verify TLS, honour no proxy (direct). Safe baseline.
 net_opts_default() -> ptr {
-    raw = malloc(24)
-    o = raw as *NetOpts
+    o = heap.new(NetOpts)
     o.insecure = 0
     o.proxy_mode = 0
     o.proxy_url = ""
@@ -72,10 +70,7 @@ basic_auth(creds: string) -> string {
     if string_equals(creds, "") == 1 {
         return ""
     }
-    enc, e = cryptography.base64_encode_padded(creds, string_length(creds))
-    if e != "" {
-        return ""
-    }
+    enc = encoding.base64_encode_padded(creds, string_length(creds))
     return string_concat("Basic ", enc)
 }
 

@@ -15,7 +15,6 @@
 import std.cryptography
 import std.string (*)
 
-extern malloc(size: int) -> ptr
 extern free(p: ptr)
 
 // MD4 digest size in bytes (the full strong checksum width).
@@ -30,8 +29,7 @@ struct RSum {
 }
 
 new_rsum(a: int, b: int) -> *RSum {
-    raw = malloc(16)
-    r = raw as *RSum
+    r = heap.new(RSum)
     r.a = a & 0xffff
     r.b = b & 0xffff
     return r

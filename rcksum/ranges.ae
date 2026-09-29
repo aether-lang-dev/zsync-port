@@ -7,7 +7,6 @@
 
 import std.list (*)
 
-extern malloc(size: int) -> ptr
 
 // A half-open-free inclusive range of block IDs [start, end].
 // Block IDs are int32 in the Go code; plain int here (Aether int is
@@ -25,8 +24,7 @@ struct BlockRanges {
 }
 
 new_pair(start: int, fin: int) -> *BlockPair {
-    raw = malloc(16)
-    p = raw as *BlockPair
+    p = heap.new(BlockPair)
     p.start = start
     p.fin = fin
     return p
@@ -44,8 +42,7 @@ pair_fin(p: *BlockPair) -> int {
 }
 
 new_ranges() -> *BlockRanges {
-    raw = malloc(16)
-    z = raw as *BlockRanges
+    z = heap.new(BlockRanges)
     z.ranges = list_new()
     z.got_blocks = 0
     return z

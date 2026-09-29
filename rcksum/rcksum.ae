@@ -21,7 +21,6 @@ import rcksum.checksums
 import rcksum.ranges
 import rcksum.fileio
 
-extern malloc(size: int) -> ptr
 
 // A heap int cell, for boxing BlockIDs as map values.
 struct IntCell {
@@ -83,8 +82,7 @@ struct RcksumState {
 
 // ---- boxing helpers for map values (BlockID stored as +1) ----
 box_int(v: int) -> ptr {
-    raw = malloc(8)
-    p = raw as *IntCell
+    p = heap.new(IntCell)
     p.v = v
     return p
 }
@@ -100,8 +98,7 @@ entry_at(z: *RcksumState, b: int) -> *HashEntry {
 }
 
 new_entry() -> *HashEntry {
-    raw = malloc(48)
-    e = raw as *HashEntry
+    e = heap.new(HashEntry)
     e.next = NO_BLOCK()
     e.rsum_a = 0
     e.rsum_b = 0
@@ -112,8 +109,7 @@ new_entry() -> *HashEntry {
 // New: construct state. rsum_bytes 1..4, checksum_bytes 3..16,
 // seq_matches 1..2, block_size a power of two.
 new(nblocks: int, block_size: int, rsum_bytes: int, checksum_bytes: int, seq_matches: int) -> *RcksumState {
-    raw = malloc(160)
-    z = raw as *RcksumState
+    z = heap.new(RcksumState)
     z.blocks = nblocks
     z.block_size = block_size
     z.checksum_bytes = checksum_bytes
@@ -151,8 +147,7 @@ new(nblocks: int, block_size: int, rsum_bytes: int, checksum_bytes: int, seq_mat
     z.r0 = checksums.rsum_as_ptr(checksums.new_rsum(0, 0))
     z.r1 = checksums.rsum_as_ptr(checksums.new_rsum(0, 0))
 
-    sraw = malloc(32)
-    st = sraw as *Stats
+    st = heap.new(Stats)
     st.hash_hit = 0
     st.weak_hit = 0
     st.strong_hit = 0

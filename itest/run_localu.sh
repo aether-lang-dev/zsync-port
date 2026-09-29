@@ -51,9 +51,10 @@ nohup "$BIN/fileserver" "$PORT" "$WORK/srv" >"$WORK/srv.log" 2>&1 & SRV=$!
 sleep 1
 
 # 1. without -u: the relative URL resolves to a local path -> not fetchable.
-if "$BIN/zsync" -q -o "$WORK/o1.bin" -i "$WORK/seed.bin" "$WORK/local.zsync" 2>/dev/null; then
+if "$BIN/zsync" -q -o "$WORK/o1.bin" -i "$WORK/seed.bin" "$WORK/local.zsync" >"$WORK/error.log" 2>&1; then
     fail "download unexpectedly succeeded without -u"
 fi
+grep -Fxq 'download failed: connection failed' "$WORK/error.log" || fail "download error did not survive the worker message lifetime"
 echo "PASS: local .zsync with a relative URL is not fetchable without -u"
 
 # 2. with -u: resolves against the base and downloads.

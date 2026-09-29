@@ -13,7 +13,6 @@ import zsync.control
 import rcksum.rcksum
 import rcksum.fileio
 
-extern malloc(size: int) -> ptr
 
 struct State {
     ctl: ptr          // *Control
@@ -50,8 +49,7 @@ br_at_fin(l: ptr, i: int) -> int {
 
 // Build State from already-parsed control + an opened output fd.
 new_state(ctl: ptr, fd: int) -> *State {
-    raw = malloc(48)
-    s = raw as *State
+    s = heap.new(State)
     s.ctl = ctl
     s.rs = control.ctl_rs(ctl)
     s.filelen = control.ctl_filelen(ctl)
@@ -102,7 +100,7 @@ needed_byte_ranges(s: *State) -> ptr {
         if rend >= s.filelen {
             rend = s.filelen - 1
         }
-        br = malloc(16) as *ByteRange
+        br = heap.new(ByteRange)
         br.start = rstart
         br.fin = rend
         list_add_raw(out, br)

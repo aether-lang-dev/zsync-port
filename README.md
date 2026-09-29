@@ -54,7 +54,21 @@ purpose, no warranty. You use it at your own risk. See the included LICENSE for
 details.
 
 To build zsync you need the Aether toolchain (`ae` / `aetherc`) on your PATH,
-then:
+then run the shared bootstrap below. It also installs aeb; zsync’s
+Makefile itself only needs ae, aetherc, make and a C compiler.
+
+Install the released toolchain with the shared, version-pinned installer
+(the same bootstrap used by selaenium):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/aether-lang-dev/aeb/main/get.sh \
+  | AE_PIN=0.740.0 AEB_REF=v0.324 sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+This ensures `ae` 0.740.0 or newer and installs `aeb` v0.324 under
+`~/.local` (`PREFIX` overrides it), using release binaries where available.
+These bootstrap versions are separate from the project's minimum API floor.
 
 ```shell
 make bins        # builds ./build/zsync, ./build/zsyncmake, ./build/fileserver

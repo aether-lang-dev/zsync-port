@@ -21,10 +21,13 @@ both ways (Artistic-2.0 §7/§8): aeb may link a zsync `.so`.
 
 ## Build / test — Makefile (ae) OR aeb
 
-**Makefile path:** `/home/paul/scm/aether/build/ae`, the dev tree. (Historically
-"NOT /usr/local/bin/ae — lacks MD4". That note is now STALE: installed Aether
-≥0.256 HAS md4_hex (#637 landed ≥0.218). Either works for the Makefile; the
-Makefile pins `AE` at build/ae for stability.)
+**Makefile path:** installed `ae` and `aetherc` on PATH. Override `AE` /
+`AETHERC` explicitly for another toolchain. README has the pinned installer.
+Verified on macOS arm64 with 0.740.0 on 2026-09-29: eight unit suites,
+four binaries, and all five HTTP/TLS/proxy integration suites. Struct boxes
+use `heap.new`, not hard-coded byte counts; generated string fields carry
+ownership metadata. The actor string-state compiler limitation and its
+downstream workaround are recorded in `asks/actor-string-state-atomic-load.md`.
 
 **aeb path (2026-06):** zsync now also builds with aeb — `aeb cmd/zsync/.build.ae`
 (+ zsyncmake/fileserver). aeb compiles each module `aetherc --emit=lib` (stricter

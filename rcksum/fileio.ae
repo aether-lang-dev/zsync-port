@@ -14,7 +14,6 @@
 
 import std.string (*)
 
-extern malloc(size: int) -> ptr
 extern zsync_io_open_rw_trunc(path: string) -> int
 extern zsync_io_open_ro(path: string) -> int
 extern zsync_io_pwrite(fd: int, buf: string, count: long, offset: long) -> long

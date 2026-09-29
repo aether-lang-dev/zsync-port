@@ -71,6 +71,10 @@ actor Fetcher {
 // Owns the download State and the needed-range list. Serialises every
 // submit through its single mailbox. Keeps at most one job per Fetcher in
 // flight, dispatching the next range whenever a Fetcher reports back.
+// Written only by the coordinator and read after wait_for_idle().
+// See asks/actor-string-state-atomic-load.md for the compiler limitation.
+struct FetchResult { err: string }
+
 actor FetchCoordinator {
     state st = null
     state ranges = null
@@ -78,7 +82,7 @@ actor FetchCoordinator {
     state cursor = 0
     state url = ""
     state auth = ""
-    state errmsg = ""
+    state result = null
     state quiet = 1
     state start_ms = 0
     state net = null
@@ -99,13 +103,15 @@ actor FetchCoordinator {
             }
         }
         FetchDone(data, len, offset, err, worker) -> {
+            outcome = result as *FetchResult
             // Termination is driven by wait_for_idle (a message counts as
             // in-flight until its handler returns, and each Fetcher's GET
             // runs synchronously inside its handler), so no pending counter
             // is needed — dropping dispatch on error lets in-flight drain.
             if err != "" {
-                if string_equals(errmsg, "") == 1 {
-                    errmsg = err
+                if string_equals(outcome.err, "") == 1 {
+                    // The message owns err; keep a separate owned copy.
+                    outcome.err = string_concat("", err)
                 }
             } else {
                 // Serialised submit into the single-threaded State.
@@ -120,7 +126,7 @@ actor FetchCoordinator {
             }
             // On success with work left, re-use this worker for the next
             // range. On error, stop dispatching and let in-flight drain.
-            if string_equals(errmsg, "") == 1 {
+            if string_equals(outcome.err, "") == 1 {
                 if cursor < nn {
                     rstart = download.br_at_start(ranges, cursor)
                     rfin = download.br_at_fin(ranges, cursor)
@@ -142,7 +148,10 @@ fetch_remaining_parallel(st: ptr, url: string, auth: string, quiet: int, net: pt
         return ""
     }
 
+    outcome = heap.new(FetchResult)
+    outcome.err = ""
     coord = spawn(FetchCoordinator())
+    coord.result = outcome
     coord.st = st
     coord.ranges = needed
     coord.nn = nn
@@ -158,7 +167,7 @@ fetch_remaining_parallel(st: ptr, url: string, auth: string, quiet: int, net: pt
     if quiet == 0 {
         io.stderr_write("\n")
     }
-    return coord.errmsg
+    return outcome.err
 }
 
 main() {
