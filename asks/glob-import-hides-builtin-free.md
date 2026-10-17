@@ -1,4 +1,4 @@
-# A glob import of std.string, std.list or std.map hides the builtin `free` from every other module (Aether 0.809.0 to 0.823.0)
+# A glob import of std.string, std.list or std.map hides the builtin `free` from every other module (Aether 0.809.0 to 0.824.0)
 
 Found bringing zsync to 0.823.0. Every suite that imports `rcksum.checksums`
 failed with 23 errors, all inside std itself:
@@ -34,7 +34,7 @@ main() {
 
 ```
 $ ae run m.ae --lib lib
-error[E0301]: Undefined function 'free'      # 0.809.0 .. 0.823.0
+error[E0301]: Undefined function 'free'      # 0.809.0 .. 0.824.0
 ok                                           # 0.803.0 and earlier
 ```
 
@@ -47,7 +47,7 @@ builtin `free` without declaring it no longer finds it. Since std.cryptography
 dropped its own `extern free` declaration, it is one such module.
 
 The pass/fail split by version: 0.741, 0.766, 0.778, 0.791, 0.801 and 0.803
-pass. 0.809, 0.810, 0.817 and 0.823 fail. The glob-import fixes #2632 and #2637
+pass. 0.809, 0.810, 0.817, 0.823 and 0.824 fail. The glob-import fixes #2632 and #2637
 landed in that window.
 
 ## What zsync does meanwhile

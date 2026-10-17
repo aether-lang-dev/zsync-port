@@ -23,7 +23,7 @@ both ways (Artistic-2.0 §7/§8): aeb may link a zsync `.so`.
 
 **Makefile path:** installed `ae` and `aetherc` on PATH. Override `AE` /
 `AETHERC` explicitly for another toolchain. README has the pinned installer.
-Verified with 0.823.0 on 2026-10-17 (macOS arm64, aether-linux arm64,
+Verified with 0.824.0 on 2026-10-18 (macOS arm64, aether-linux arm64,
 ae-x64 gcc -Werror): eight unit suites, four binaries, and all five
 HTTP/TLS/proxy/304/local-URL integration suites. 0.818 is the floor: the
 code uses `@keep ptr`. Since 0.818 every string is counted, so the C shim
