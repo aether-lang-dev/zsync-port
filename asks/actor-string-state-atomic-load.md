@@ -34,3 +34,10 @@ The downstream workaround stores the error in a heap-allocated FetchResult,
 written exclusively by the coordinator and read only after wait_for_idle().
 The regular HTTP integration test exercises successful parallel fetching;
 its failure paths must remain covered as well. This is not an upstream fix.
+
+## Status (2026-10-17): fixed upstream by 0.823.0
+
+The repro above builds and prints `failed` with Aether 0.823.0 (Clang, macOS
+arm64). The FetchResult workaround in `cmd/zsync.ae` still works and is kept.
+It is a reasonable shape in its own right: one writer, read after
+wait_for_idle. It no longer has to be there, though.

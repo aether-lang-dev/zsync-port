@@ -5,8 +5,11 @@
 // host extractor it keys on. Mirrors the Go authMap behaviour: a
 // credential applies only to requests whose host matches.
 
-import std.string (*)
+import std.string (
+    string_equals
+)
 import std.fs
+import std.string
 import cmd.clientlib
 import test.assert
 
@@ -91,15 +94,15 @@ main() {
         "ksup: missing file -> ok")
     // Existing path named .zsync -> OK regardless of content.
     zpath = "/tmp/zsync_ksup_named.zsync"
-    fs.write_binary(zpath, "not really a control file", 25)
+    _w = fs.write_binary(zpath, string.bytes("not really a control file"))
     assert.eq_str(h, clientlib.check_supplied_filename(zpath), "", "ksup: .zsync name -> ok")
     // Existing non-.zsync file that IS a control file (starts "zsync:") -> OK.
     okpath = "/tmp/zsync_ksup_ctl.keep"
-    fs.write_binary(okpath, "zsync: 0.7.1\nFilename: x\n", 24)
+    _w = fs.write_binary(okpath, string.bytes("zsync: 0.7.1\nFilename: x\n"))
     assert.eq_str(h, clientlib.check_supplied_filename(okpath), "", "ksup: valid control body -> ok")
     // Existing non-.zsync file that is NOT a control file -> REFUSE.
     badpath = "/tmp/zsync_ksup_data.txt"
-    fs.write_binary(badpath, "important user data, do not clobber\n", 36)
+    _w = fs.write_binary(badpath, string.bytes("important user data, do not clobber\n"))
     kres = clientlib.check_supplied_filename(badpath)
     assert.ok(h, string_equals(kres, "") == 0, "ksup: non-control file -> refused (non-empty err)")
 

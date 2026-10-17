@@ -9,8 +9,13 @@
 //   zsync [-o output] [-i seedfile]... [-A host=user:pass] [-k keep.zsync]
 //         [-q] [-v] [-V] [--no-check-certificate] <url-or-path-to-.zsync>
 
-import std.string (*)
-import std.list (*)
+import std.string (
+    string_concat, string_length, string_char_at, string_equals,
+    string_starts_with, string_substring
+)
+import std.list (
+    list_new, list_add_raw, list_get_raw, list_size
+)
 import std.os (*)
 import std.io
 import std.fs
@@ -115,7 +120,7 @@ actor FetchCoordinator {
                 }
             } else {
                 // Serialised submit into the single-threaded State.
-                download.submit_target_data(st, offset, fileio.buf_as_string(data), len)
+                download.submit_target_data(st, offset, fileio.buf_to_str(data, len), len)
                 fileio.buf_free(data)
                 // Live progress line (stderr, \r-overwritten) as ranges land.
                 if quiet == 0 {
@@ -141,7 +146,7 @@ actor FetchCoordinator {
 // Fetch all missing byte ranges from `url`, up to FETCH_CONCURRENCY at a
 // time. Returns "" on success, an error string otherwise. When quiet==0 a
 // live progress line is printed to stderr as ranges arrive.
-fetch_remaining_parallel(st: ptr, url: string, auth: string, quiet: int, net: ptr) -> string {
+fetch_remaining_parallel(st: @keep ptr, url: string, auth: string, quiet: int, net: @keep ptr) -> string {
     needed = download.needed_byte_ranges(st)
     nn = download.br_count(needed)
     if nn == 0 {
@@ -373,7 +378,7 @@ get_control(source: string, keep: string, auth: string, quiet: int, net: ptr) ->
         return "", 0, e
     }
     if string_equals(keep, "") == 0 {
-        fs.write_binary(keep, body, n)
+        _w = fs.write_binary(keep, fileio.view(body, n))
         // Stamp the saved copy's mtime from the server's Last-Modified so
         // a rerun sends an accurate If-Modified-Since (matches Go). If the
         // server sent none, the file keeps "now" — still yields a correct
@@ -392,7 +397,7 @@ get_control(source: string, keep: string, auth: string, quiet: int, net: ptr) ->
 // `base` — the -u value or the source) until the download completes.
 // Mirrors the Go failover, minus the randomisation (deterministic order
 // is friendlier to test).
-fetch_from_urls(st: ptr, ctl: ptr, base: string, auths: ptr, quiet: int, net: ptr) -> string {
+fetch_from_urls(st: @keep ptr, ctl: ptr, base: string, auths: ptr, quiet: int, net: @keep ptr) -> string {
     urls = control.ctl_urls(ctl)
     if urls == null {
         return "no download URLs known"

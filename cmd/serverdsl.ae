@@ -19,7 +19,11 @@
 // the listener. No parent-child wiring, no config-file parser — the .ae
 // file IS the config.
 
-import std.string (*)
+import std.string (
+    string_concat, string_length, string_equals, string_starts_with,
+    string_contains, string_index_of, string_substring, string_from_int,
+    string_try_long, string_get_long
+)
 import std.http (*)
 import std.fs
 import rcksum.fileio

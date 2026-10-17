@@ -54,7 +54,10 @@ sleep 1
 if "$BIN/zsync" -q -o "$WORK/o1.bin" -i "$WORK/seed.bin" "$WORK/local.zsync" >"$WORK/error.log" 2>&1; then
     fail "download unexpectedly succeeded without -u"
 fi
-grep -Fxq 'download failed: connection failed' "$WORK/error.log" || fail "download error did not survive the worker message lifetime"
+# The resolver's verdict on the local path differs by platform (macOS:
+# connection failed; glibc: could not resolve host). Either way the whole
+# line must arrive intact, which is what this checks.
+grep -Exq 'download failed: (connection failed|could not resolve host)' "$WORK/error.log" || fail "download error did not survive the worker message lifetime"
 echo "PASS: local .zsync with a relative URL is not fetchable without -u"
 
 # 2. with -u: resolves against the base and downloads.

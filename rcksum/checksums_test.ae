@@ -5,7 +5,10 @@
 // the actual Go rcksum code (internal/rcksum) — asserted byte-exact so
 // the uint16 wraparound and MD4 truncation reproduce precisely.
 
-import std.string (*)
+import std.string (
+    string_concat, string_length, string_substring, string_char_at_n,
+    string_from_char
+)
 import std.cryptography (*)
 import rcksum.checksums
 import test.assert

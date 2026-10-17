@@ -23,11 +23,19 @@ both ways (Artistic-2.0 §7/§8): aeb may link a zsync `.so`.
 
 **Makefile path:** installed `ae` and `aetherc` on PATH. Override `AE` /
 `AETHERC` explicitly for another toolchain. README has the pinned installer.
-Verified on macOS arm64 with 0.740.0 on 2026-09-29: eight unit suites,
-four binaries, and all five HTTP/TLS/proxy integration suites. Struct boxes
-use `heap.new`, not hard-coded byte counts; generated string fields carry
-ownership metadata. The actor string-state compiler limitation and its
-downstream workaround are recorded in `asks/actor-string-state-atomic-load.md`.
+Verified with 0.823.0 on 2026-10-17 (macOS arm64, aether-linux arm64,
+ae-x64 gcc -Werror): eight unit suites, four binaries, and all five
+HTTP/TLS/proxy/304/local-URL integration suites. 0.818 is the floor: the
+code uses `@keep ptr`. Since 0.818 every string is counted, so the C shim
+(`rcksum/fileio.c`) hands back AetherStrings built with
+`string_new_with_length`, and its externs say `@heap`. A raw `char*` typed
+`string` is copied as a C string when it is bound, and binary block data
+would be cut at its first NUL. `fileio.view(s, n)` is the byte[] view for the
+slice-taking std calls (digests, fs.write_binary, io.fd_write). Do not
+glob-import std.string, std.list or std.map: see
+`asks/glob-import-hides-builtin-free.md`. The actor string-state limitation
+in `asks/actor-string-state-atomic-load.md` is fixed as of 0.823.0.
+Struct boxes use `heap.new`, not hard-coded byte counts.
 
 **aeb path (2026-06):** zsync now also builds with aeb — `aeb cmd/zsync/.build.ae`
 (+ zsyncmake/fileserver). aeb compiles each module `aetherc --emit=lib` (stricter

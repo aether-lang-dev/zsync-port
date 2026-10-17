@@ -5,8 +5,14 @@
 // (text headers, blank line, then the binary block-checksum table) into
 // an rcksum state plus the metadata the client needs.
 
-import std.string (*)
-import std.list (*)
+import std.string (
+    string_concat, string_length, string_char_at, string_equals,
+    string_substring, string_char_at_n, string_split, string_array_size,
+    string_array_get, string_try_long, string_get_long
+)
+import std.list (
+    list_new, list_add_raw
+)
 import rcksum.rcksum
 import rcksum.checksums
 import rcksum.fileio
@@ -221,11 +227,11 @@ pad_md4(data: string, data_len: int, off: int, n: int) -> string {
         }
         i = i + 1
     }
-    // dup16 returns a process-lifetime raw buffer (untracked) so the
-    // heap-string tracker can't recycle it under the long-lived
-    // HashEntry.md4 field. (buf_to_str's tracked string was reused,
-    // cross-linking block checksums with a +2 shift.)
-    return fileio.dup16(b)
+    // A fresh counted 16-byte string; the HashEntry.md4 field that keeps
+    // it holds its own reference (Aether 0.818+ ownership).
+    md = fileio.dup16(b)
+    fileio.buf_free(b)
+    return md
 }
 
 // --- small string helpers ---

@@ -5,8 +5,14 @@
 // Fetches the .zsync control file and the missing byte ranges over HTTP
 // (using std.http.client v2 Range requests), driving the download State.
 
-import std.string (*)
-import std.map (*)
+import std.string (
+    string_concat, string_length, string_char_at, string_equals,
+    string_starts_with, string_ends_with, string_index_of, string_substring,
+    string_char_at_n, string_from_int
+)
+import std.map (
+    map_new, map_put_string_owned, map_get_raw, map_has
+)
 import std.fs
 import std.http.client
 import std.encoding
@@ -70,7 +76,7 @@ basic_auth(creds: string) -> string {
     if string_equals(creds, "") == 1 {
         return ""
     }
-    enc = encoding.base64_encode_padded(creds, string_length(creds))
+    enc = encoding.base64_encode_padded(fileio.view(creds, string_length(creds)))
     return string_concat("Basic ", enc)
 }
 
@@ -309,8 +315,8 @@ http_get_auth(url: string, auth: string, ims: string, opts: ptr) -> (string, int
         return "", 0, status, "", concat3("http status ", int_str(status), "")
     }
     lastmod = str_dup(client.response_header(resp, "Last-Modified"))
-    n = client.response_body_length(resp)
     body = client.response_body(resp)
+    n = string_length(body)
     owned = copy_bytes(body, n)
     client.response_free(resp)
     return owned, n, 200, lastmod, ""
@@ -342,8 +348,8 @@ http_get_range_auth(url: string, start: int, fin: int, auth: string, opts: ptr) 
         client.response_free(resp)
         return "", 0, concat3("expected 206, got ", int_str(status), "")
     }
-    n = client.response_body_length(resp)
     body = client.response_body(resp)
+    n = string_length(body)
     owned = copy_bytes(body, n)
     client.response_free(resp)
     return owned, n, ""
@@ -376,8 +382,8 @@ http_get_range_raw(url: string, start: int, fin: int, auth: string, opts: ptr) -
         client.response_free(resp)
         return null, 0, concat3("expected 206, got ", int_str(status), "")
     }
-    n = client.response_body_length(resp)
     body = client.response_body(resp)
+    n = string_length(body)
     // Copy into a raw buffer that outlives response_free and carries no
     // tracker header (survives the actor message copy intact).
     b = fileio.buf_alloc(n)
@@ -430,7 +436,7 @@ fetch_remaining(st: ptr, url: string, auth: string) -> string {
         while i < nn {
             rstart = download.br_at_start(needed, i)
             rfin = download.br_at_fin(needed, i)
-            chunk, clen, e = http_get_range_auth(url, rstart, rfin, auth)
+            chunk, clen, e = http_get_range_auth(url, rstart, rfin, auth, null)
             if e != "" {
                 return e
             }

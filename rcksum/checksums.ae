@@ -13,7 +13,10 @@
 // correctness bug. Verified byte-for-byte against the Go oracle.
 
 import std.cryptography
-import std.string (*)
+import rcksum.fileio
+import std.string (
+    string_char_at_n
+)
 
 extern free(p: ptr)
 
@@ -79,7 +82,7 @@ update_rsum(r: *RSum, old_c: int, new_c: int, block_shift: int) {
 // (the caller may compare a truncated prefix). md4_bytes (#637) gives
 // the raw 16 bytes — binary-safe, no hex round-trip.
 calc_checksum(data: string, len: int) -> string {
-    digest, n, err = cryptography.md4_bytes(data, len)
+    digest, n, err = cryptography.md4_bytes(fileio.view(data, len))
     if err != "" {
         return ""
     }

@@ -5,7 +5,9 @@
 // ranges already obtained. Pure logic, no external dependencies beyond
 // std.list, which backs the dynamic `[]blockIDPair`.
 
-import std.list (*)
+import std.list (
+    list_new, list_add_raw, list_get_raw, list_set, list_size, list_remove
+)
 
 
 // A half-open-free inclusive range of block IDs [start, end].

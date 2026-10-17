@@ -3,7 +3,10 @@
 //
 // zsyncmake entry point — thin CLI over cmd.mklib.
 
-import std.string (*)
+import std.string (
+    string_concat, string_length, string_char_at, string_equals,
+    string_substring, string_try_long, string_get_long
+)
 import std.os (*)
 import std.fs
 import std.io
@@ -111,12 +114,12 @@ main() {
     if string_equals(out, "") == 1 {
         // write the (binary) control file to stdout, length-explicit so
         // the checksum table's NUL bytes survive
-        if io.fd_write_n(1, content, clen) != 0 {
+        if io.fd_write(1, fileio.view(content, clen)) != 0 {
             println("write: stdout")
             exit(2)
         }
     } else {
-        werr = fs.write_binary(out, content, clen)
+        werr = fs.write_binary(out, fileio.view(content, clen))
         if werr != "" {
             println("write: ${werr}")
             exit(2)

@@ -8,7 +8,7 @@
 // original file as the seed must match all 5 blocks (todo->0) and the
 // reconstructed output must have the recorded SHA-1.
 
-import std.string (*)
+import std.string
 import std.fs
 import std.cryptography
 import zsync.control
@@ -62,7 +62,7 @@ main() {
     fileio.sync_fd(fd)
     out, on = fileio.read_at(fd, 5000, 0)
     assert.eq_int(h, on, 5000, "output is 5000 bytes")
-    sha, e = cryptography.sha1_hex(out, on)
+    sha, e = cryptography.sha1_hex(fileio.view(out, on))
     assert.eq_str(h, sha, "f5d0ac38bfdafcbc2bfe68aad7af017c6b8ad946", "reconstructed SHA-1 matches")
 
     fileio.close_fd(fd)

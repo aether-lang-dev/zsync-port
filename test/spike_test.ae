@@ -5,6 +5,7 @@
 // the md4_bytes dependency all work before any real logic is ported.
 
 import std.cryptography
+import std.string
 import test.assert
 
 main() {
@@ -12,18 +13,18 @@ main() {
     h = assert.new()
 
     // MD4("") = 31d6cfe0d16ae931b73c59d7e0c089c0  (RFC 1320 A.5)
-    hex, e = cryptography.md4_hex("", 0)
+    hex, e = cryptography.md4_hex(string.bytes(""))
     assert.eq_str(h, e, "", "md4_hex empty: no error")
     assert.eq_str(h, hex, "31d6cfe0d16ae931b73c59d7e0c089c0", "md4_hex empty matches RFC 1320")
 
     // Binary form must be exactly 16 bytes — this is what the per-block
     // strong checksum stores (then truncates to checksumBytes).
-    digest, n, e2 = cryptography.md4_bytes("", 0)
+    digest, n, e2 = cryptography.md4_bytes(string.bytes(""))
     assert.eq_str(h, e2, "", "md4_bytes empty: no error")
     assert.eq_int(h, n, 16, "md4_bytes returns 16 bytes")
 
     // MD4("abc") = a448017aaf21d8525fc10ae87aa6729d (RFC 1320 A.5)
-    hex2, e3 = cryptography.md4_hex("abc", 3)
+    hex2, e3 = cryptography.md4_hex(string.bytes("abc"))
     assert.eq_str(h, e3, "", "md4_hex abc: no error")
     assert.eq_str(h, hex2, "a448017aaf21d8525fc10ae87aa6729d", "md4_hex abc matches RFC 1320")
 

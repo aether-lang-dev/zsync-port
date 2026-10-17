@@ -14,7 +14,9 @@
 // Range/206, health probe) is declared in the trailing block; each
 // serve()/health() call auto-receives the server via _ctx injection.
 
-import std.string (*)
+import std.string (
+    string_try_long, string_get_long
+)
 import std.os (*)
 import cmd.serverdsl
 

@@ -16,8 +16,12 @@ C_OBJS := rcksum/fileio.o
 # Imported modules affect each whole-program compile, too.
 AE_SOURCES := $(wildcard rcksum/*.ae zsync/*.ae cmd/*.ae test/*.ae)
 
+# The shim builds counted strings (aether_string.h), so it compiles with
+# `ae cflags`' include flags, less the link-only words.
+CFLAGS_SHIM := $(filter-out -L% -l% -pthread,$(CFLAGS_AE))
+
 %.o: %.c
-	$(CC) -c $< -o $@
+	$(CC) $(CFLAGS_SHIM) -c $< -o $@
 
 # Run a single .ae test through `ae run`, linking sidecar C via the
 # build pipeline. For tests that need the C shim we go through aetherc

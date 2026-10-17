@@ -6,8 +6,12 @@
 // seed submission, needed byte ranges, target-data submission, status,
 // progress, and final SHA-1 verification.
 
-import std.string (*)
-import std.list (*)
+import std.string (
+    string_concat, string_equals, string_to_lower, string_from_int
+)
+import std.list (
+    list_new, list_add_raw, list_get_raw, list_size
+)
 import std.cryptography
 import zsync.control
 import rcksum.rcksum
@@ -48,7 +52,7 @@ br_at_fin(l: ptr, i: int) -> int {
 }
 
 // Build State from already-parsed control + an opened output fd.
-new_state(ctl: ptr, fd: int) -> *State {
+new_state(ctl: @keep ptr, fd: int) -> *State {
     s = heap.new(State)
     s.ctl = ctl
     s.rs = control.ctl_rs(ctl)
@@ -154,7 +158,7 @@ complete(s: *State) -> string {
     if n != s.filelen {
         return "failed to read back file for verification"
     }
-    got, e = cryptography.sha1_hex(out, n)
+    got, e = cryptography.sha1_hex(fileio.view(out, n))
     if e != "" {
         return "sha1 failed"
     }

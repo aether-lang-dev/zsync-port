@@ -12,12 +12,14 @@
 // positional ops here are a 1:1 match for the std calls and could be
 // swapped if the fd model is ever revisited.
 
-import std.string (*)
+import std.string (
+    string_char_at_n, aether_string_raw_ptr
+)
 
 extern zsync_io_open_rw_trunc(path: string) -> int
 extern zsync_io_open_ro(path: string) -> int
 extern zsync_io_pwrite(fd: int, buf: string, count: long, offset: long) -> long
-extern zsync_io_pread_alloc(fd: int, count: long, offset: long) -> string
+extern zsync_io_pread_alloc(fd: int, count: long, offset: long) -> string @heap
 extern zsync_io_last_read_len() -> long
 extern zsync_io_ftruncate(fd: int, length: long) -> int
 extern zsync_io_close(fd: int) -> int
@@ -43,18 +45,15 @@ write_at(fd: int, data: string, len: int, offset: int) -> int {
     return written
 }
 
-// Read `len` bytes at `offset` into a fresh heap buffer. Returns the
-// buffer as a length-aware string and the number of bytes actually
-// read (may be < len at EOF), or ("", -1) on error.
+// Read `len` bytes at `offset`. Returns them as a fresh, length-aware
+// string (the shim builds it, so embedded NULs survive) and the number of
+// bytes actually read (may be < len at EOF), or ("", -1) on error.
 read_at(fd: int, len: int, offset: int) -> (string, int) {
-    buf = zsync_io_pread_alloc(fd, len, offset)
+    s = zsync_io_pread_alloc(fd, len, offset)
     n = zsync_io_last_read_len()
     if n < 0 {
         return "", -1
     }
-    // Wrap the malloc'd C buffer as a length-aware Aether string so
-    // embedded NULs survive (block data is binary).
-    s = string_new_with_length(buf, n)
     return s, n
 }
 
@@ -72,10 +71,10 @@ sync_fd(fd: int) -> int {
 
 // --- mutable byte buffer (for the bithash table) ---
 extern zsync_buf_alloc(n: long) -> ptr
-// Same allocator, char*-returning, for callers that wrap it with
-// string_new_with_length (avoids a ptr->string `as` cast, which the
-// language doesn't permit).
-extern zsync_buf_alloc_str(n: long) -> string
+// A zeroed, length-aware string of n bytes; and the first n bytes of a
+// byte buffer as a fresh length-aware string. Both are the caller's.
+extern zsync_buf_alloc_str(n: long) -> string @heap
+extern zsync_buf_to_string(b: ptr, n: long) -> string @heap
 extern zsync_buf_get(b: ptr, i: long) -> int
 extern zsync_buf_set(b: ptr, i: long, v: int)
 extern zsync_buf_or(b: ptr, i: long, v: int)
@@ -88,7 +87,7 @@ buf_alloc(n: int) -> ptr {
 // Allocate a zeroed buffer of n bytes, returned as a length-aware
 // Aether string of length n.
 buf_alloc_str(n: int) -> string {
-    return string_new_with_length(zsync_buf_alloc_str(n), n)
+    return zsync_buf_alloc_str(n)
 }
 
 buf_get(b: ptr, i: int) -> int {
@@ -107,16 +106,20 @@ buf_free(b: ptr) {
     zsync_buf_free(b)
 }
 
-// Wrap an existing byte buffer (ptr) as a length-aware string of n
-// bytes, copying via string_new_with_length. Used after mutating a
-// buf_alloc'd buffer with buf_set.
+// Copy the first n bytes of a byte buffer (ptr) into a fresh,
+// length-aware string. Used after mutating a buf_alloc'd buffer with
+// buf_set. The caller owns the result; a struct field it is stored in
+// takes its own reference (Aether 0.818+), so no manual retain.
 buf_to_str(b: ptr, n: int) -> string {
-    s = string_new_with_length(buf_as_string(b), n)
-    // Retain so the heap-string tracker doesn't free it when the
-    // producing function returns — these buffers get stored into
-    // malloc'd structs (HashEntry.md4) the tracker can't see.
-    string_retain(s)
-    return s
+    return zsync_buf_to_string(b, n)
+}
+
+// A bounded byte[] view of the first n bytes of a length-aware string,
+// for the std calls that take a slice (digests, file writes). Borrowed:
+// valid while `s` is.
+view(s: string, n: int) -> byte[] {
+    if n <= 0 { return null }
+    return (aether_string_raw_ptr(s) as byte[])[0..n]
 }
 
 // Copy `src` (src_len bytes) but with the first `prefix` bytes zeroed.
@@ -132,7 +135,9 @@ zero_prefix(src: string, src_len: int, prefix: int) -> string {
         }
         i = i + 1
     }
-    return string_new_with_length(buf_as_string(out), src_len)
+    r = zsync_buf_to_string(out, src_len)
+    zsync_buf_free(out)
+    return r
 }
 
 // Copy `rem` bytes of `src` at `start` into a fresh `blocksize`-byte
@@ -144,7 +149,9 @@ pad_block(src: string, src_len: int, start: int, rem: int, blocksize: int) -> st
         zsync_buf_set(out, i, string_char_at_n(src, src_len, start + i) & 0xff)
         i = i + 1
     }
-    return string_new_with_length(buf_as_string(out), blocksize)
+    r = zsync_buf_to_string(out, blocksize)
+    zsync_buf_free(out)
+    return r
 }
 
 // Binary-safe substring: copy bytes [start, start+len) of a length-aware
@@ -158,10 +165,15 @@ slice(src: string, src_len: int, start: int, len: int) -> string {
         zsync_buf_set(out, i, string_char_at_n(src, src_len, start + i) & 0xff)
         i = i + 1
     }
-    return string_new_with_length(buf_as_string(out), len)
+    r = zsync_buf_to_string(out, len)
+    zsync_buf_free(out)
+    return r
 }
 
-// ptr-typed buffer re-typed as string (identity at the C level).
+// Re-type a container element (std.list / std.map store `ptr`) that holds
+// a counted string back as a `string`. Only for counted strings: binding
+// the result keeps a reference, where a raw C buffer would be copied as a
+// C string and stop at its first NUL (use buf_to_str for raw bytes).
 extern zsync_buf_identity(b: ptr) -> string
 buf_as_string(b: ptr) -> string {
     return zsync_buf_identity(b)
@@ -169,7 +181,7 @@ buf_as_string(b: ptr) -> string {
 
 // RFC1123Z formatting of a Unix epoch (UTC), for zsync's MTime header.
 // std only formats "now" as ISO-8601, so this covers arbitrary epochs.
-extern zsync_rfc1123z(epoch: long) -> string
+extern zsync_rfc1123z(epoch: long) -> string @heap
 extern zsync_parse_rfc1123(s: string) -> long
 
 rfc1123z(epoch: int) -> string {
@@ -187,17 +199,11 @@ set_mtime(path: string, epoch: int) -> int {
     return zsync_set_mtime(path, epoch)
 }
 
-// Persistently copy 16 bytes out of a buf into a fresh, process-lifetime
-// buffer returned as a length-16 string. Use this (not buf_to_str) for
-// values stashed into long-lived structs (target-block MD4s) — it does
-// not go through the heap-string tracker, which was recycling buffers.
-// Returns a raw malloc'd char* (typed string) — deliberately NOT an
-// AetherString, so the heap-string tracker treats it as borrowed and
-// never frees/recycles it. This is what target-block MD4s need: they
-// live for the whole run inside untracked malloc'd HashEntry structs,
-// and going through string_new_with_length had the tracker recycling
-// the backing buffers (cross-linking block checksums).
-extern zsync_dup16(b: ptr) -> string
+// Copy 16 bytes out of a buf into a fresh length-16 string (a
+// target-block MD4). The result is an ordinary counted string: the struct
+// that stores it holds its own reference, so it lives as long as that
+// struct does. (Before Aether 0.818 this returned a raw malloc'd char*
+// typed as string, to keep a heap-string heuristic from recycling it.)
 dup16(b: ptr) -> string {
-    return zsync_dup16(b)
+    return zsync_buf_to_string(b, 16)
 }

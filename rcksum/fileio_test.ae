@@ -5,7 +5,9 @@
 // truncate. This is the primitive the rcksum core relies on to scatter
 // reconstructed blocks into the output file.
 
-import std.string (*)
+import std.string (
+    string_char_at_n, string_from_char
+)
 import std.fs
 import rcksum.fileio
 import test.assert

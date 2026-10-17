@@ -9,7 +9,11 @@
 //
 // Usage: fileserver <port> <base-dir>
 
-import std.string (*)
+import std.string (
+    string_concat, string_length, string_char_at, string_equals,
+    string_starts_with, string_ends_with, string_substring, string_try_long,
+    string_get_long
+)
 import std.http (*)
 import std.os (*)
 import std.fs

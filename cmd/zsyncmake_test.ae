@@ -8,7 +8,7 @@
 // We regenerate the same control file in Aether (passing the Go-recorded
 // MTime so the headers match) and assert the bytes are identical.
 
-import std.string (*)
+import std.string
 import std.fs
 import cmd.mklib
 import test.assert

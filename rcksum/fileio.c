@@ -29,6 +29,10 @@
 #include <sys/time.h>
 #include <string.h>
 
+/* Counted strings: every string this shim hands to Aether is an
+ * AetherString (Aether 0.818 ownership model, R1). */
+#include "aether_string.h"
+
 /* Open for read+write, create if absent, truncate. mode 0644.
  * Returns the fd, or -1 on failure. */
 int zsync_io_open_rw_trunc(const char *path) {
@@ -54,16 +58,13 @@ long zsync_io_pwrite(int fd, const char *buf, long count, long offset) {
     return total;
 }
 
-/* Read up to `count` bytes at absolute `offset` into a freshly
- * malloc'd buffer (count+1 bytes, NUL-terminated for str-safety).
- * Returns the buffer; the caller reads the actual byte count via
- * zsync_io_last_read_len() and must free it. Returns NULL on error.
- *
- * Returning the buffer (rather than reading into a caller buffer)
- * sidesteps Aether's ptr-vs-string param typing for the read path. */
+/* Read up to `count` bytes at absolute `offset`. Returns the bytes as a
+ * fresh, length-aware AetherString the caller owns (declared `@heap` on
+ * the Aether side, so binary data with NULs survives), and records the
+ * byte count for zsync_io_last_read_len(). Returns NULL on error, with
+ * the count set to -1. */
 static long zsync_io_last_n = 0;
-
-char *zsync_io_pread_alloc(int fd, long count, long offset) {
+AetherString *zsync_io_pread_alloc(int fd, long count, long offset) {
     char *buf = (char *)malloc((size_t)count + 1);
     if (!buf) { zsync_io_last_n = -1; return NULL; }
     long total = 0;
@@ -74,11 +75,11 @@ char *zsync_io_pread_alloc(int fd, long count, long offset) {
         if (n == 0) break;   /* EOF */
         total += n;
     }
-    buf[total] = '\0';
     zsync_io_last_n = total;
-    return buf;
+    AetherString *s = string_new_with_length(buf, (size_t)total);
+    free(buf);
+    return s;
 }
-
 long zsync_io_last_read_len(void) {
     return zsync_io_last_n;
 }
@@ -102,22 +103,19 @@ unsigned char *zsync_buf_alloc(long n) {
     return b;
 }
 
-/* Same allocator, char*-typed return for the string-wrapping path. */
-char *zsync_buf_alloc_str(long n) {
-    return (char *)calloc((size_t)n, 1);
+/* A zeroed, length-aware string of n bytes, owned by the caller. */
+AetherString *zsync_buf_alloc_str(long n) {
+    char *b = (char *)calloc((size_t)n + 1, 1);
+    if (!b) return NULL;
+    AetherString *s = string_new_with_length(b, (size_t)n);
+    free(b);
+    return s;
 }
 
-/* Persistently copy the first 16 bytes of a raw byte buffer `b` (as
- * produced by zsync_buf_alloc + zsync_buf_set) into a fresh malloc'd
- * 16-byte buffer, returned as char*. Owned for the process lifetime
- * (one per target block) — no dependency on Aether's heap-string
- * tracker, which was recycling buffers and cross-linking block MD4s. */
-char *zsync_dup16(unsigned char *b) {
-    char *out = (char *)malloc(17);
-    if (!out) return out;
-    for (int i = 0; i < 16; i++) out[i] = (char)b[i];
-    out[16] = '\0';
-    return out;
+/* Copy the first `n` bytes of a raw byte buffer `b` (zsync_buf_alloc +
+ * zsync_buf_set) into a fresh, length-aware string the caller owns. */
+AetherString *zsync_buf_to_string(unsigned char *b, long n) {
+    return string_new_with_length((const char *)b, (size_t)n);
 }
 
 int zsync_buf_get(unsigned char *b, long i) {
@@ -136,30 +134,27 @@ void zsync_buf_free(unsigned char *b) {
     free(b);
 }
 
-/* Identity — re-types a byte buffer pointer as char* for the Aether
- * side to wrap with string_new_with_length. */
+/* Identity: re-types a container element that holds a counted string
+ * (std.list / std.map store void*) as a string for the Aether side. */
 char *zsync_buf_identity(unsigned char *b) {
     return (char *)b;
 }
 
 /* Format a Unix epoch time as RFC1123Z in UTC, e.g.
  * "Mon, 02 Jan 2006 15:04:05 +0000" — the exact shape zsync's MTime
- * header uses (Go's time.RFC1123Z formatted as UTC). Returned in a
- * process-lifetime buffer. Returns NULL on failure. std has only an
- * ISO-8601 "now" formatter, so this fills the gap for arbitrary epochs. */
-char *zsync_rfc1123z(long epoch) {
+ * header uses (Go's time.RFC1123Z formatted as UTC). Returns a fresh
+ * string the caller owns, or NULL on failure. std has only an ISO-8601
+ * "now" formatter, so this fills the gap for arbitrary epochs. */
+AetherString *zsync_rfc1123z(long epoch) {
     time_t t = (time_t)epoch;
     struct tm tmv;
     if (!gmtime_r(&t, &tmv)) return NULL;
-    char *out = (char *)malloc(40);
-    if (!out) return NULL;
+    char out[40];
     /* strftime's %z on a gmtime struct may emit "+0000" or be empty
      * depending on libc, so hard-code "+0000" for UTC. */
-    if (strftime(out, 40, "%a, %d %b %Y %H:%M:%S +0000", &tmv) == 0) {
-        free(out);
-        return NULL;
-    }
-    return out;
+    size_t n = strftime(out, sizeof out, "%a, %d %b %Y %H:%M:%S +0000", &tmv);
+    if (n == 0) return NULL;
+    return string_new_with_length(out, n);
 }
 
 /* Parse an RFC1123/RFC1123Z date string back to a Unix epoch (UTC).

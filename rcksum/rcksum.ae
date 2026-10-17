@@ -14,9 +14,15 @@
 // from one actor/flow; concurrency is handled above by fanning out HTTP
 // range fetches that each call submit on disjoint offsets, serialized).
 
-import std.string (*)
-import std.list (*)
-import std.map (*)
+import std.string (
+    string_char_at_n, string_from_int
+)
+import std.list (
+    list_new, list_add_raw, list_get_raw
+)
+import std.map (
+    map_new, map_put_raw, map_get_raw, map_remove
+)
 import rcksum.checksums
 import rcksum.ranges
 import rcksum.fileio

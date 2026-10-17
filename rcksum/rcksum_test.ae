@@ -10,7 +10,9 @@
 //   Go oracle: after seed todo=2; after submitting A,C todo=0;
 //              file == target.
 
-import std.string (*)
+import std.string (
+    string_length
+)
 import std.cryptography
 import rcksum.rcksum
 import rcksum.checksums

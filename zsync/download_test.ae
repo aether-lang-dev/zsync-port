@@ -7,7 +7,7 @@
 // copying those bytes out of the original (standing in for HTTP range
 // fetches), and verify complete() passes the SHA-1.
 
-import std.string (*)
+import std.string
 import std.fs
 import zsync.control
 import zsync.download

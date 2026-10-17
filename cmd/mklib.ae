@@ -6,7 +6,9 @@
 // whole-file SHA-1, derives the hash lengths, and writes headers + the
 // binary checksum table. Output is byte-compatible with the Go tool.
 
-import std.string (*)
+import std.string (
+    string_concat, string_length, string_char_at_n, string_from_int
+)
 import std.math (*)
 import std.cryptography
 import std.os (*)
@@ -80,7 +82,7 @@ generate_n(data: string, data_len: int, blocksize: int, filename: string, mtime:
 
 // Build just the header text (ASCII, no NULs).
 build_header(data_len: int, blocksize: int, sm: int, rsum_len: int, cksum_len: int, filename: string, mtime: string, url: string) -> string {
-    sha1, e = cryptography.sha1_hex("", 0)   // placeholder; replaced below
+    sha1, e = cryptography.sha1_hex(fileio.view("", 0))   // placeholder; replaced below
     head = ""
     head = cat(head, "zsync: ")
     head = cat(head, VERSION())
@@ -123,7 +125,7 @@ generate(data: string, data_len: int, blocksize: int, filename: string, mtime: s
     sm, rsum_len, cksum_len = determine_hash_lengths(data_len, blocksize)
 
     // Whole-file SHA-1 (over the real bytes, not padded blocks).
-    sha1, e = cryptography.sha1_hex(data, data_len)
+    sha1, e = cryptography.sha1_hex(fileio.view(data, data_len))
 
     // --- headers ---
     head = ""
