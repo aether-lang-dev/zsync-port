@@ -98,11 +98,13 @@ actor FetchCoordinator {
             w = 0
             while w < FETCH_CONCURRENCY {
                 if cursor < nn {
-                    f = spawn(Fetcher())
+                    // Not `f`: a handler local named like one of a std module's own
+                    // locals leaks its type into that module (asks/local-type-leaks-into-std-module.md).
+                    fetcher = spawn(Fetcher())
                     rstart = download.br_at_start(ranges, cursor)
                     rfin = download.br_at_fin(ranges, cursor)
                     cursor = cursor + 1
-                    f ! FetchJob { url: url, start: rstart, fin: rfin, auth: auth, net: net, coord: self }
+                    fetcher ! FetchJob { url: url, start: rstart, fin: rfin, auth: auth, net: net, coord: self }
                 }
                 w = w + 1
             }

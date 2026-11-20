@@ -13,7 +13,7 @@
 // swapped if the fd model is ever revisited.
 
 import std.string (
-    string_char_at_n, aether_string_raw_ptr
+    string_char_at_n, bytes
 )
 
 extern zsync_io_open_rw_trunc(path: string) -> int
@@ -116,10 +116,11 @@ buf_to_str(b: ptr, n: int) -> string {
 
 // A bounded byte[] view of the first n bytes of a length-aware string,
 // for the std calls that take a slice (digests, file writes). Borrowed:
-// valid while `s` is.
+// valid while `s` is, and read-only (std.string's bytes() view, sub-sliced).
 view(s: string, n: int) -> byte[] {
     if n <= 0 { return null }
-    return (aether_string_raw_ptr(s) as byte[])[0..n]
+    whole = bytes(s)
+    return whole[0..n]
 }
 
 // Copy `src` (src_len bytes) but with the first `prefix` bytes zeroed.
