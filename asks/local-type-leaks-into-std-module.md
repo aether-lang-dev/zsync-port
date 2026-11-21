@@ -51,7 +51,9 @@ Renaming the local `f` in the program to anything else (`w`, `fetcher`)
 makes it compile. It built on 0.824.0 and 0.927.0's predecessors; first seen
 here on 0.931.0.
 
-## Workaround in this repo
+## Resolved in Aether 0.933.0
 
-`cmd/zsync.ae` names the local `fetcher`, with a comment pointing here. It is
-a rename only; the right fix is in the compiler.
+0.933.0 walks an actor as a scope of its own, so a handler's locals no longer
+type another function's locals of the same name. The repro above compiles on
+0.933.0 and fails on 0.931.0 with the error shown. `cmd/zsync.ae` is back to
+naming the local `f`, and the floor of this repo is 0.933.0 for that reason.

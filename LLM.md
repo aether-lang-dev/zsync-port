@@ -23,14 +23,15 @@ both ways (Artistic-2.0 §7/§8): aeb may link a zsync `.so`.
 
 **Makefile path:** installed `ae` and `aetherc` on PATH. Override `AE` /
 `AETHERC` explicitly for another toolchain. README has the pinned installer.
-Verified with 0.931.0 on 2026-11-20 (cachyos x86_64): eight unit suites (136
+Verified with 0.933.0 on 2026-11-21 (macOS arm64): eight unit suites (136
 checks), four binaries, and all five HTTP/TLS/proxy/304/local-URL integration
-suites. Moving off 0.824.0 needed two source changes: std.string no longer
-exports `aether_string_raw_ptr`, so `fileio.view` takes `string.bytes(s)[0..n]`
-(a read-only view); and a handler local named `f` in `cmd/zsync.ae` is now
-`fetcher`, because of the compiler bug in
-`asks/local-type-leaks-into-std-module.md`. 0.818 was the floor before that
-(the code uses `@keep ptr`); 0.931.0 is the only release verified since. Since 0.818 every string is counted, so the C shim
+suites (on 0.931.0 the same on cachyos, 2026-11-20). Moving off 0.824.0 needed
+one source change: std.string no longer exports `aether_string_raw_ptr`, so
+`fileio.view` takes `string.bytes(s)[0..n]` (a read-only view). The floor is
+0.933.0: `cmd/zsync.ae` names a handler local `f` again, which 0.931.0 and
+0.932.0 refuse (E0302 inside std/cryptography/sha2, the compiler bug in
+`asks/local-type-leaks-into-std-module.md`, fixed in 0.933.0). The code uses
+`@keep ptr`, which needs 0.818. Since 0.818 every string is counted, so the C shim
 (`rcksum/fileio.c`) hands back AetherStrings built with
 `string_new_with_length`, and its externs say `@heap`. A raw `char*` typed
 `string` is copied as a C string when it is bound, and binary block data
