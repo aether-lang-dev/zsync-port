@@ -23,12 +23,12 @@ both ways (Artistic-2.0 §7/§8): aeb may link a zsync `.so`.
 
 **Makefile path:** installed `ae` and `aetherc` on PATH. Override `AE` /
 `AETHERC` explicitly for another toolchain. README has the pinned installer.
-Verified with 0.936.0 on 2026-11-22 (ae-x64, Ubuntu 22.04 x86_64: `make test`, eight unit suites all passing; the itest was not run) and, before it, with 0.935.0 on the same day (the same) and 0.933.0 on 2026-11-21 (macOS arm64): eight unit suites (136
+Verified with 0.939.0 on 2026-11-23 (ae-x64, Ubuntu 22.04 x86_64: `make test`, eight unit suites, 38/38 in the last; `make bins`; and all five HTTP/TLS/proxy/304/local-URL integration suites; a 2048-range download of a 4 MiB file went from 839-916 ms to 576-637 ms with the pool), and with 0.936.0 on 2026-11-22 (ae-x64, Ubuntu 22.04 x86_64: `make test`, eight unit suites all passing; the itest was not run) and, before it, with 0.935.0 on the same day (the same) and 0.933.0 on 2026-11-21 (macOS arm64): eight unit suites (136
 checks), four binaries, and all five HTTP/TLS/proxy/304/local-URL integration
 suites (on 0.931.0 the same on cachyos, 2026-11-20). Moving off 0.824.0 needed
 one source change: std.string no longer exports `aether_string_raw_ptr`, so
 `fileio.view` takes `string.bytes(s)[0..n]` (a read-only view). The floor is
-0.933.0: `cmd/zsync.ae` names a handler local `f` again, which 0.931.0 and
+0.939.0: `cmd/clientlib.ae`'s NetOpts owns an HTTP connection pool (`client.pool_new`, new in 0.939.0, where std.http.client lost its process-wide pool), and before that the floor was 0.933.0: `cmd/zsync.ae` names a handler local `f` again, which 0.931.0 and
 0.932.0 refuse (E0302 inside std/cryptography/sha2, the compiler bug in
 `asks/local-type-leaks-into-std-module.md`, fixed in 0.933.0). The code uses
 `@keep ptr`, which needs 0.818. Since 0.818 every string is counted, so the C shim

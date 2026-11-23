@@ -24,10 +24,16 @@ import rcksum.fileio
 // Connection options applied to every request, threaded from the CLI.
 //   insecure:   1 = skip TLS peer/hostname verification (--no-check-certificate)
 //   proxy_mode: 0 = direct, 1 = follow $HTTP_PROXY etc, 2 = explicit proxy_url
+//   pool:       this run's own HTTP connection pool (std.http.client). The
+//               range fetchers share it, so a download of many ranges from one
+//               host reuses connections instead of opening one per range. It
+//               belongs to the NetOpts and is freed by net_opts_free; null
+//               (no pool) just means each request opens its own connection.
 struct NetOpts {
     insecure: int
     proxy_mode: int
     proxy_url: string
+    pool: ptr
 }
 
 // Default: verify TLS, honour no proxy (direct). Safe baseline.
@@ -36,7 +42,22 @@ net_opts_default() -> ptr {
     o.insecure = 0
     o.proxy_mode = 0
     o.proxy_url = ""
+    pool, _perr = client.pool_new()
+    o.pool = pool
     return o
+}
+
+// Free the options and the connection pool they own (closing its idle
+// connections). Nothing may still be sending a request through them.
+net_opts_free(o: ptr) {
+    if o == null {
+        return
+    }
+    s = o as *NetOpts
+    if s.pool != null {
+        client.pool_free(s.pool)
+    }
+    heap.free(o)
 }
 
 net_opts_set_insecure(o: ptr, on: int) {
@@ -59,6 +80,9 @@ apply_net_opts(req: ptr, o: ptr) {
         return
     }
     s = o as *NetOpts
+    if s.pool != null {
+        client.set_pool(req, s.pool)
+    }
     if s.insecure == 1 {
         client.set_insecure(req, 1)
     }

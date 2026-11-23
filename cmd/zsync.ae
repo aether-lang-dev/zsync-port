@@ -348,6 +348,7 @@ main() {
         s = download.stats_line(st)
         println(s)
     }
+    clientlib.net_opts_free(net)
 }
 
 // Fetch the control file. If -k is set and a local copy exists, send
