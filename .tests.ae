@@ -1,0 +1,55 @@
+// SPDX-FileCopyrightText: 2026 Colin Phipps <cph@moria.org.uk>
+// SPDX-License-Identifier: Artistic-2.0
+//
+// aeb test target: the same eight unit suites `make test` runs, one
+// aether.program_test per file. A suite passes iff its binary exits 0.
+// The positional-I/O C shim rcksum/fileio.c is linked into each, as the
+// Makefile's `build/%` rules do. The HTTP integration suites (itest/) stay
+// on `make itest`.
+import bldr
+import aether
+import aether (source, extra_source, no_closure_regen)
+
+aeb(cap) {
+    bldr.build() {
+        aether.program_test() {
+            source("rcksum/ranges_test.ae")
+            no_closure_regen()
+        }
+        aether.program_test() {
+            source("rcksum/checksums_test.ae")
+            no_closure_regen()
+        }
+        aether.program_test() {
+            source("rcksum/fileio_test.ae")
+            extra_source("rcksum/fileio.c")
+            no_closure_regen()
+        }
+        aether.program_test() {
+            source("rcksum/rcksum_test.ae")
+            extra_source("rcksum/fileio.c")
+            no_closure_regen()
+        }
+        aether.program_test() {
+            source("zsync/control_test.ae")
+            extra_source("rcksum/fileio.c")
+            no_closure_regen()
+        }
+        aether.program_test() {
+            source("zsync/download_test.ae")
+            extra_source("rcksum/fileio.c")
+            no_closure_regen()
+        }
+        aether.program_test() {
+            source("cmd/zsyncmake_test.ae")
+            extra_source("rcksum/fileio.c")
+            no_closure_regen()
+        }
+        aether.program_test() {
+            source("cmd/clientlib_test.ae")
+            extra_source("rcksum/fileio.c")
+            no_closure_regen()
+        }
+        return 0
+    }
+}

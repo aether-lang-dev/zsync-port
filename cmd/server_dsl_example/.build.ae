@@ -2,13 +2,18 @@
 // SPDX-License-Identifier: Artistic-2.0
 //
 // aeb build for the closure-DSL server example (config-IS-code surface).
-import build
+import bldr
 import aether
-import aether (source, output)
+import aether (source, output, extra_source, no_closure_regen)
+
 main() {
-    b = build.start()
-    aether.program(b) {
-        source("../server_dsl_example.ae")
-        output("server_dsl_example")
+    bldr.build() {
+        aether.program() {
+            source("../server_dsl_example.ae")
+            extra_source("../../rcksum/fileio.c")
+            no_closure_regen()
+            output("server_dsl_example")
+        }
+        return 0
     }
 }

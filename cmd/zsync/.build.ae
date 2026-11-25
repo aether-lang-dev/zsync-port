@@ -7,15 +7,18 @@
 // links the positional-I/O C shim rcksum/fileio.c via extra_source().
 // aeb is a build TOOL here (like make/gcc) — it does not relicense the
 // Artistic-2.0 output. See LLM.md.
-import build
+import bldr
 import aether
-import aether (source, output, extra_source)
+import aether (source, output, extra_source, no_closure_regen)
 
 main() {
-    b = build.start()
-    aether.program(b) {
-        source("../zsync.ae")
-        extra_source("../../rcksum/fileio.c")
-        output("zsync")
+    bldr.build() {
+        aether.program() {
+            source("../zsync.ae")
+            extra_source("../../rcksum/fileio.c")
+            no_closure_regen()
+            output("zsync")
+        }
+        return 0
     }
 }

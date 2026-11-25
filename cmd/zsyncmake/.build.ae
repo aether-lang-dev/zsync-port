@@ -3,14 +3,18 @@
 //
 // aeb build for `zsyncmake` (.zsync control-file generator). Links the
 // rcksum/fileio.c positional-I/O shim (zsyncmake imports rcksum.fileio).
-import build
+import bldr
 import aether
-import aether (source, output, extra_source)
+import aether (source, output, extra_source, no_closure_regen)
+
 main() {
-    b = build.start()
-    aether.program(b) {
-        source("../zsyncmake.ae")
-        extra_source("../../rcksum/fileio.c")
-        output("zsyncmake")
+    bldr.build() {
+        aether.program() {
+            source("../zsyncmake.ae")
+            extra_source("../../rcksum/fileio.c")
+            no_closure_regen()
+            output("zsyncmake")
+        }
+        return 0
     }
 }

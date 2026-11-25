@@ -3,13 +3,18 @@
 //
 // aeb build for the native `fileserver` (Range-honouring static server,
 // the zsync download endpoint). Pure Aether (std.http) — no C shim.
-import build
+import bldr
 import aether
-import aether (source, output)
+import aether (source, output, extra_source, no_closure_regen)
+
 main() {
-    b = build.start()
-    aether.program(b) {
-        source("../fileserver.ae")
-        output("fileserver")
+    bldr.build() {
+        aether.program() {
+            source("../fileserver.ae")
+            extra_source("../../rcksum/fileio.c")
+            no_closure_regen()
+            output("fileserver")
+        }
+        return 0
     }
 }

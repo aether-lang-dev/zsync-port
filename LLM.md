@@ -42,14 +42,18 @@ glob-import std.string, std.list or std.map: see
 in `asks/actor-string-state-atomic-load.md` is fixed as of 0.823.0.
 Struct boxes use `heap.new`, not hard-coded byte counts.
 
-**aeb path (2026-06):** zsync now also builds with aeb — `aeb cmd/zsync/.build.ae`
-(+ zsyncmake/fileserver). aeb compiles each module `aetherc --emit=lib` (stricter
-than the Makefile's whole-program compile). Build against the INSTALLED Aether
-(`/usr/local/bin/ae`), which has the nested include layout aeb wants — building
-against the dev TREE currently hits an aeb include-threading gap (aether_panic.h
-not found; filed as aeb asks/aether-program-dev-tree-include-threading.md). aeb
-is a build TOOL here — it does NOT relicense the Artistic-2.0 output (see top).
-server_dsl_example is pre-broken (DSL closure form) in `make` too — not aeb's fault.
+**aeb path (migrated to the current DSL 2026-11-25, aeb v0.349):** all four
+binaries build with aeb: `aeb --scan '.build.ae'` (or one at a time,
+`aeb cmd/zsync/.build.ae`), and `aeb --scan '.tests.ae'` runs the same eight
+unit suites as `make test` (one `aether.program_test` each, 8/8). Each
+`cmd/*/.build.ae` is `bldr.build() { aether.program() { ... } }`; the old
+`build.start()` / `aether.program(b)` form is gone (current aeb rejects it).
+Every node uses `no_closure_regen()` (plain whole-program `aetherc`, like the
+Makefile; the default per-module `--emit=lib` pass refuses std.fs/std.http
+imports without caps) and `extra_source("../../rcksum/fileio.c")` for the C
+shim (the tests use `rcksum/fileio.c` relative to the repo root). aeb is a
+build TOOL here: it does NOT relicense the Artistic-2.0 output (see top).
+The HTTP integration suites (`itest/`) stay on `make itest`.
 
 - `make test` → 7 test files, ~94 asserts, all parity-checked vs Go. Green = good.
 - `make bins` → build/{zsync,zsyncmake,fileserver,server_dsl_example}.
